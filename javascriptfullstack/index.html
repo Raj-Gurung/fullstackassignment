@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>BrainBurst – Quiz App</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0d1117;
+      --surface: #161b22;
+      --card: #1c2128;
+      --border: #30363d;
+      --primary: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --text: #e6edf3;
+      --muted: #8b949e;
+      --radius: 12px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 680px;
+    }
+
+    /* ── Screens ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    /* ── Start Screen ── */
+    .start-screen {
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2rem;
+    }
+
+    .logo {
+      font-size: 3.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .start-screen h1 {
+      font-size: 2.4rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+    }
+
+    .start-screen p {
+      color: var(--muted);
+      margin-bottom: 2.5rem;
+      font-size: 1rem;
+    }
+
+    .category-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .category-btn {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.2rem 0.8rem;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 600;
+      transition: all 0.2s;
+      text-align: center;
+    }
+
+    .category-btn .cat-icon { font-size: 1.8rem; display: block; margin-bottom: 0.4rem; }
+
+    .category-btn:hover,
+    .category-btn.selected {
+      border-color: var(--primary);
+      background: rgba(88, 166, 255, 0.1);
+      color: var(--primary);
+    }
+
+    .difficulty-row {
+      display: flex;
+      gap: 0.8rem;
+      justify-content: center;
+      margin-bottom: 2rem;
+    }
+
+    .diff-btn {
+      padding: 0.5rem 1.4rem;
+      border-radius: 20px;
+      border: 2px solid var(--border);
+      background: var(--card);
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .diff-btn:hover { border-color: var(--yellow); color: var(--yellow); }
+    .diff-btn.selected { border-color: var(--yellow); background: rgba(210,153,34,0.15); color: var(--yellow); }
+
+    .btn-start {
+      background: var(--primary);
+      color: #0d1117;
+      border: none;
+      padding: 0.9rem 3rem;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.2s;
+      width: 100%;
+    }
+
+    .btn-start:hover { opacity: 0.88; transform: translateY(-2px); }
+
+    /* ── Quiz Screen ── */
+    .quiz-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+
+    .q-counter {
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .score-badge {
+      background: rgba(88,166,255,0.15);
+      color: var(--primary);
+      padding: 0.3rem 0.9rem;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .timer-bar-wrap {
+      background: var(--border);
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 1.8rem;
+      overflow: hidden;
+    }
+
+    .timer-bar {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 4px;
+      transition: width 1s linear, background 0.3s;
+    }
+
+    .timer-text {
+      text-align: right;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.3rem;
+      margin-bottom: 1rem;
+    }
+
+    .question-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .question-label {
+      font-size: 0.78rem;
+      color: var(--primary);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      font-weight: 700;
+      margin-bottom: 0.8rem;
+    }
+
+    .question-text {
+      font-size: 1.2rem;
+      font-weight: 600;
+      line-height: 1.55;
+      color: var(--text);
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    @media (max-width: 500px) {
+      .options-grid { grid-template-columns: 1fr; }
+    }
+
+    .option-btn {
+      background: var(--card);
+      border: 2px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1rem 1.2rem;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 0.7rem;
+    }
+
+    .option-btn .opt-letter {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      color: var(--muted);
+    }
+
+    .option-btn:hover:not(:disabled) {
+      border-color: var(--primary);
+      background: rgba(88,166,255,0.08);
+    }
+
+    .option-btn:hover:not(:disabled) .opt-letter {
+      background: var(--primary);
+      color: #0d1117;
+    }
+
+    .option-btn.correct {
+      border-color: var(--green);
+      background: rgba(63,185,80,0.12);
+      color: var(--green);
+    }
+
+    .option-btn.correct .opt-letter {
+      background: var(--green);
+      color: #0d1117;
+    }
+
+    .option-btn.wrong {
+      border-color: var(--red);
+      background: rgba(248,81,73,0.12);
+      color: var(--red);
+    }
+
+    .option-btn.wrong .opt-letter {
+      background: var(--red);
+      color: #fff;
+    }
+
+    .option-btn:disabled { cursor: not-allowed; opacity: 0.7; }
+
+    .feedback-bar {
+      text-align: center;
+      font-size: 1rem;
+      font-weight: 700;
+      padding: 0.8rem;
+      border-radius: 10px;
+      margin-bottom: 1rem;
+      display: none;
+    }
+
+    .feedback-bar.show { display: block; }
+    .feedback-bar.correct-fb { background: rgba(63,185,80,0.15); color: var(--green); }
+    .feedback-bar.wrong-fb  { background: rgba(248,81,73,0.15);  color: var(--red); }
+
+    .btn-next {
+      width: 100%;
+      padding: 0.9rem;
+      background: var(--primary);
+      color: #0d1117;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: none;
+      transition: opacity 0.2s;
+    }
+
+    .btn-next.show { display: block; }
+    .btn-next:hover { opacity: 0.85; }
+
+    /* ── Progress dots ── */
+    .progress-dots {
+      display: flex;
+      gap: 6px;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+
+    .dot.done-correct { background: var(--green); }
+    .dot.done-wrong   { background: var(--red); }
+    .dot.current      { background: var(--primary); }
+
+    /* ── Result Screen ── */
+    .result-screen {
+      text-align: center;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3rem 2rem;
+    }
+
+    .result-emoji { font-size: 4rem; margin-bottom: 1rem; }
+
+    .result-screen h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .result-screen p.subtitle {
+      color: var(--muted);
+      margin-bottom: 2rem;
+    }
+
+    .score-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      border: 6px solid var(--primary);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 2rem;
+    }
+
+    .score-circle .big-score {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .score-circle .score-label {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 0.2rem;
+    }
+
+    .stats-row {
+      display: flex;
+      justify-content: center;
+      gap: 2rem;
+      margin-bottom: 2rem;
+      flex-wrap: wrap;
+    }
+
+    .stat-item { text-align: center; }
+    .stat-item .val { font-size: 1.5rem; font-weight: 700; }
+    .stat-item .lbl { font-size: 0.78rem; color: var(--muted); margin-top: 0.2rem; }
+    .stat-item .val.g { color: var(--green); }
+    .stat-item .val.r { color: var(--red); }
+    .stat-item .val.y { color: var(--yellow); }
+
+    .review-list {
+      text-align: left;
+      margin-bottom: 2rem;
+      max-height: 280px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+
+    .review-item {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.88rem;
+    }
+
+    .review-item .ri-q { color: var(--muted); margin-bottom: 0.3rem; }
+    .review-item .ri-a { font-weight: 600; }
+    .review-item .ri-a.correct { color: var(--green); }
+    .review-item .ri-a.wrong   { color: var(--red); }
+
+    .btn-restart {
+      background: var(--primary);
+      color: #0d1117;
+      border: none;
+      padding: 0.9rem 3rem;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      transition: opacity 0.2s;
+    }
+
+    .btn-restart:hover { opacity: 0.85; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- START SCREEN -->
+  <div class="screen active" id="startScreen">
+    <div class="start-screen">
+      <div class="logo">🧠</div>
+      <h1>BrainBurst</h1>
+      <p>Test your knowledge across topics. 10 questions, 20 seconds each.</p>
+
+      <div class="category-grid" id="categoryGrid">
+        <button class="category-btn selected" data-cat="general">
+          <span class="cat-icon">🌍</span> General
+        </button>
+        <button class="category-btn" data-cat="science">
+          <span class="cat-icon">🔬</span> Science
+        </button>
+        <button class="category-btn" data-cat="history">
+          <span class="cat-icon">📜</span> History
+        </button>
+        <button class="category-btn" data-cat="tech">
+          <span class="cat-icon">💻</span> Technology
+        </button>
+      </div>
+
+      <div class="difficulty-row" id="diffRow">
+        <button class="diff-btn selected" data-diff="easy">Easy</button>
+        <button class="diff-btn" data-diff="medium">Medium</button>
+        <button class="diff-btn" data-diff="hard">Hard</button>
+      </div>
+
+      <button class="btn-start" id="btnStart">Start Quiz 🚀</button>
+    </div>
+  </div>
+
+  <!-- QUIZ SCREEN -->
+  <div class="screen" id="quizScreen">
+    <div class="quiz-header">
+      <span class="q-counter" id="qCounter">Question 1 of 10</span>
+      <span class="score-badge" id="scoreBadge">Score: 0</span>
+    </div>
+
+    <div class="progress-dots" id="progressDots"></div>
+
+    <div class="timer-bar-wrap">
+      <div class="timer-bar" id="timerBar"></div>
+    </div>
+    <div class="timer-text" id="timerText">20s</div>
+
+    <div class="question-card">
+      <div class="question-label" id="questionLabel">General · Easy</div>
+      <div class="question-text" id="questionText"></div>
+    </div>
+
+    <div class="options-grid" id="optionsGrid"></div>
+
+    <div class="feedback-bar" id="feedbackBar"></div>
+    <button class="btn-next" id="btnNext">Next Question →</button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div class="screen" id="resultScreen">
+    <div class="result-screen">
+      <div class="result-emoji" id="resultEmoji">🎉</div>
+      <h2 id="resultTitle">Well Done!</h2>
+      <p class="subtitle" id="resultSubtitle">Here's how you did:</p>
+
+      <div class="score-circle">
+        <div class="big-score" id="finalScore">0/10</div>
+        <div class="score-label">Score</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-item">
+          <div class="val g" id="statCorrect">0</div>
+          <div class="lbl">✅ Correct</div>
+        </div>
+        <div class="stat-item">
+          <div class="val r" id="statWrong">0</div>
+          <div class="lbl">❌ Wrong</div>
+        </div>
+        <div class="stat-item">
+          <div class="val y" id="statTime">0s</div>
+          <div class="lbl">⏱ Avg Time</div>
+        </div>
+        <div class="stat-item">
+          <div class="val" id="statPct" style="color:var(--primary)">0%</div>
+          <div class="lbl">📊 Accuracy</div>
+        </div>
+      </div>
+
+      <div class="review-list" id="reviewList"></div>
+
+      <button class="btn-restart" id="btnRestart">Play Again 🔄</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ── Question Bank ──
+  const questionBank = {
+    general: {
+      easy: [
+        { q: "What is the capital city of France?", opts: ["Berlin", "Madrid", "Paris", "Rome"], ans: 2 },
+        { q: "How many continents are there on Earth?", opts: ["5", "6", "7", "8"], ans: 2 },
+        { q: "Which planet is known as the Red Planet?", opts: ["Venus", "Mars", "Jupiter", "Saturn"], ans: 1 },
+        { q: "What is the largest ocean on Earth?", opts: ["Atlantic", "Indian", "Arctic", "Pacific"], ans: 3 },
+        { q: "How many sides does a hexagon have?", opts: ["5", "6", "7", "8"], ans: 1 },
+        { q: "What color is the sky on a clear day?", opts: ["Green", "Yellow", "Blue", "White"], ans: 2 },
+        { q: "Which animal is known as the King of the Jungle?", opts: ["Tiger", "Elephant", "Lion", "Cheetah"], ans: 2 },
+        { q: "How many hours are in a day?", opts: ["12", "20", "24", "48"], ans: 2 },
+        { q: "What is the boiling point of water in Celsius?", opts: ["90°C", "95°C", "100°C", "110°C"], ans: 2 },
+        { q: "Which country is known as the Land of the Rising Sun?", opts: ["China", "Japan", "Korea", "Thailand"], ans: 1 },
+      ],
+      medium: [
+        { q: "What is the smallest country in the world?", opts: ["Monaco", "San Marino", "Vatican City", "Liechtenstein"], ans: 2 },
+        { q: "Who painted the Mona Lisa?", opts: ["Michelangelo", "Raphael", "Leonardo da Vinci", "Donatello"], ans: 2 },
+        { q: "What is the currency of Japan?", opts: ["Yuan", "Won", "Yen", "Ringgit"], ans: 2 },
+        { q: "Which is the longest river in the world?", opts: ["Amazon", "Yangtze", "Mississippi", "Nile"], ans: 3 },
+        { q: "In which year did World War II end?", opts: ["1943", "1944", "1945", "1946"], ans: 2 },
+        { q: "What is the chemical symbol for gold?", opts: ["Gd", "Go", "Au", "Ag"], ans: 2 },
+        { q: "How many bones are in the adult human body?", opts: ["196", "206", "216", "226"], ans: 1 },
+        { q: "Which planet has the most moons?", opts: ["Jupiter", "Saturn", "Uranus", "Neptune"], ans: 1 },
+        { q: "What language has the most native speakers?", opts: ["English", "Spanish", "Hindi", "Mandarin Chinese"], ans: 3 },
+        { q: "Which element has the atomic number 1?", opts: ["Helium", "Oxygen", "Hydrogen", "Carbon"], ans: 2 },
+      ],
+      hard: [
+        { q: "What is the capital of Burkina Faso?", opts: ["Dakar", "Ouagadougou", "Bamako", "Niamey"], ans: 1 },
+        { q: "Which treaty ended World War I?", opts: ["Treaty of Paris", "Treaty of Versailles", "Treaty of Utrecht", "Treaty of Vienna"], ans: 1 },
+        { q: "What is the rarest blood type?", opts: ["AB-", "O-", "B-", "A-"], ans: 0 },
+        { q: "In what year was the Magna Carta signed?", opts: ["1215", "1315", "1415", "1515"], ans: 0 },
+        { q: "What is the speed of light in km/s?", opts: ["200,000", "250,000", "300,000", "350,000"], ans: 2 },
+        { q: "Which country has the most UNESCO World Heritage Sites?", opts: ["China", "Spain", "Italy", "France"], ans: 2 },
+        { q: "What is the chemical formula for table salt?", opts: ["NaCl", "KCl", "CaCl2", "MgCl2"], ans: 0 },
+        { q: "Which ocean is the deepest?", opts: ["Atlantic", "Indian", "Pacific", "Arctic"], ans: 2 },
+        { q: "What is the half-life of Carbon-14?", opts: ["2,730 years", "5,730 years", "10,730 years", "15,730 years"], ans: 1 },
+        { q: "Who wrote 'Crime and Punishment'?", opts: ["Tolstoy", "Chekhov", "Dostoevsky", "Turgenev"], ans: 2 },
+      ]
+    },
+    science: {
+      easy: [
+        { q: "What gas do plants absorb from the atmosphere?", opts: ["Oxygen", "Nitrogen", "Carbon Dioxide", "Hydrogen"], ans: 2 },
+        { q: "What force keeps us on the ground?", opts: ["Magnetism", "Gravity", "Friction", "Tension"], ans: 1 },
+        { q: "What is H2O commonly known as?", opts: ["Salt", "Sugar", "Water", "Acid"], ans: 2 },
+        { q: "How many planets are in our Solar System?", opts: ["7", "8", "9", "10"], ans: 1 },
+        { q: "What organ pumps blood through the body?", opts: ["Liver", "Lungs", "Brain", "Heart"], ans: 3 },
+        { q: "What is the center of an atom called?", opts: ["Electron", "Proton", "Nucleus", "Neutron"], ans: 2 },
+        { q: "Which vitamin does sunlight provide?", opts: ["Vitamin A", "Vitamin B", "Vitamin C", "Vitamin D"], ans: 3 },
+        { q: "What is the hardest natural substance?", opts: ["Gold", "Iron", "Diamond", "Platinum"], ans: 2 },
+        { q: "What type of energy does the sun produce?", opts: ["Nuclear", "Chemical", "Kinetic", "Solar"], ans: 0 },
+        { q: "What is the powerhouse of the cell?", opts: ["Nucleus", "Ribosome", "Mitochondria", "Golgi body"], ans: 2 },
+      ],
+      medium: [
+        { q: "What is the chemical symbol for iron?", opts: ["Ir", "In", "Fe", "Ie"], ans: 2 },
+        { q: "What is the most abundant gas in Earth's atmosphere?", opts: ["Oxygen", "Carbon Dioxide", "Argon", "Nitrogen"], ans: 3 },
+        { q: "How many chromosomes do humans have?", opts: ["23", "44", "46", "48"], ans: 2 },
+        { q: "What is the unit of electrical resistance?", opts: ["Volt", "Watt", "Ohm", "Ampere"], ans: 2 },
+        { q: "Which planet has the Great Red Spot?", opts: ["Mars", "Saturn", "Neptune", "Jupiter"], ans: 3 },
+        { q: "What is the process by which plants make food?", opts: ["Respiration", "Photosynthesis", "Digestion", "Osmosis"], ans: 1 },
+        { q: "What does DNA stand for?", opts: ["Deoxyribonucleic Acid", "Diribonucleic Acid", "Deoxyribose Acid", "Dextronucleic Acid"], ans: 0 },
+        { q: "Which planet is closest to the Sun?", opts: ["Venus", "Earth", "Mars", "Mercury"], ans: 3 },
+        { q: "What is the pH of pure water?", opts: ["5", "6", "7", "8"], ans: 2 },
+        { q: "What type of wave is sound?", opts: ["Transverse", "Electromagnetic", "Longitudinal", "Surface"], ans: 2 },
+      ],
+      hard: [
+        { q: "What is the Schwarzschild radius?", opts: ["Radius of a neutron star", "Event horizon of a black hole", "Distance to nearest star", "Radius of the observable universe"], ans: 1 },
+        { q: "Which subatomic particle has no charge?", opts: ["Proton", "Electron", "Neutron", "Positron"], ans: 2 },
+        { q: "What is the SI unit of luminous intensity?", opts: ["Lumen", "Lux", "Candela", "Watt"], ans: 2 },
+        { q: "What is Avogadro's number approximately?", opts: ["6.02 × 10²²", "6.02 × 10²³", "6.02 × 10²⁴", "6.02 × 10²⁵"], ans: 1 },
+        { q: "Which law states energy cannot be created or destroyed?", opts: ["Newton's First Law", "Ohm's Law", "First Law of Thermodynamics", "Boyle's Law"], ans: 2 },
+        { q: "What particle is exchanged in electromagnetic interactions?", opts: ["Gluon", "W boson", "Photon", "Graviton"], ans: 2 },
+        { q: "What is the name of the process where a solid becomes gas directly?", opts: ["Evaporation", "Condensation", "Sublimation", "Deposition"], ans: 2 },
+        { q: "What is the half-life of Uranium-238?", opts: ["4.5 million years", "4.5 billion years", "45 million years", "450 million years"], ans: 1 },
+        { q: "What quantum number describes the shape of an orbital?", opts: ["Principal", "Magnetic", "Spin", "Azimuthal"], ans: 3 },
+        { q: "What is the name of the force carrier for the strong nuclear force?", opts: ["Photon", "W boson", "Gluon", "Z boson"], ans: 2 },
+      ]
+    },
+    history: {
+      easy: [
+        { q: "Who was the first President of the United States?", opts: ["Abraham Lincoln", "Thomas Jefferson", "George Washington", "John Adams"], ans: 2 },
+        { q: "In which year did the Titanic sink?", opts: ["1910", "1911", "1912", "1913"], ans: 2 },
+        { q: "Which ancient wonder was located in Egypt?", opts: ["Colosseum", "Parthenon", "Great Pyramid of Giza", "Stonehenge"], ans: 2 },
+        { q: "Who was the first man to walk on the moon?", opts: ["Buzz Aldrin", "Yuri Gagarin", "Neil Armstrong", "John Glenn"], ans: 2 },
+        { q: "Which empire built the Colosseum?", opts: ["Greek", "Ottoman", "Roman", "Byzantine"], ans: 2 },
+        { q: "In which country did the French Revolution take place?", opts: ["England", "France", "Italy", "Germany"], ans: 1 },
+        { q: "What ancient civilization built the pyramids?", opts: ["Roman", "Greek", "Mesopotamian", "Egyptian"], ans: 3 },
+        { q: "Who discovered America in 1492?", opts: ["Amerigo Vespucci", "Vasco da Gama", "Christopher Columbus", "Ferdinand Magellan"], ans: 2 },
+        { q: "In which year did World War I begin?", opts: ["1912", "1913", "1914", "1915"], ans: 2 },
+        { q: "Who was the famous leader of the Indian independence movement?", opts: ["Nehru", "Bose", "Gandhi", "Ambedkar"], ans: 2 },
+      ],
+      medium: [
+        { q: "Which civilization invented writing (cuneiform)?", opts: ["Egyptians", "Romans", "Sumerians", "Greeks"], ans: 2 },
+        { q: "What was the name of the first artificial satellite?", opts: ["Apollo", "Vostok", "Sputnik", "Explorer"], ans: 2 },
+        { q: "The Berlin Wall fell in which year?", opts: ["1987", "1988", "1989", "1990"], ans: 2 },
+        { q: "Who wrote the Communist Manifesto?", opts: ["Lenin", "Engels & Marx", "Stalin", "Trotsky"], ans: 1 },
+        { q: "The Renaissance began in which country?", opts: ["France", "Germany", "Spain", "Italy"], ans: 3 },
+        { q: "Which pharaoh was discovered in the tomb KV62?", opts: ["Ramesses II", "Tutankhamun", "Akhenaten", "Thutmose III"], ans: 1 },
+        { q: "Who was the first Emperor of China?", opts: ["Wu Zetian", "Genghis Khan", "Qin Shi Huang", "Kublai Khan"], ans: 2 },
+        { q: "The Hundred Years' War was fought between which two countries?", opts: ["England & Spain", "France & Germany", "England & France", "Spain & Portugal"], ans: 2 },
+        { q: "Which city was the capital of the Byzantine Empire?", opts: ["Rome", "Athens", "Constantinople", "Alexandria"], ans: 2 },
+        { q: "In which year did India gain independence?", opts: ["1945", "1946", "1947", "1948"], ans: 2 },
+      ],
+      hard: [
+        { q: "What year was the Battle of Hastings?", opts: ["1055", "1066", "1077", "1088"], ans: 1 },
+        { q: "Who was the last Tsar of Russia?", opts: ["Alexander III", "Nicholas I", "Alexander II", "Nicholas II"], ans: 3 },
+        { q: "The Peloponnesian War was fought between which two city-states?", opts: ["Athens & Sparta", "Corinth & Thebes", "Athens & Corinth", "Sparta & Macedonia"], ans: 0 },
+        { q: "In which year was the Magna Carta signed?", opts: ["1205", "1215", "1225", "1235"], ans: 1 },
+        { q: "Which explorer first circumnavigated the globe?", opts: ["Columbus", "Da Gama", "Magellan's expedition", "Drake"], ans: 2 },
+        { q: "What was the name of the Aztec capital city?", opts: ["Cuzco", "Tenochtitlan", "Chichen Itza", "Tikal"], ans: 1 },
+        { q: "Who succeeded Julius Caesar as Roman Emperor?", opts: ["Nero", "Augustus", "Caligula", "Claudius"], ans: 1 },
+        { q: "In which year did the Ottoman Empire fall?", opts: ["1918", "1920", "1922", "1924"], ans: 2 },
+        { q: "What was the name of the first successful powered airplane?", opts: ["Spirit of St. Louis", "Wright Flyer", "Kitty Hawk", "Biplane I"], ans: 1 },
+        { q: "Which dynasty built the Great Wall of China?", opts: ["Han", "Tang", "Ming", "Song"], ans: 2 },
+      ]
+    },
+    tech: {
+      easy: [
+        { q: "What does 'WWW' stand for?", opts: ["World Wide Web", "World Width Web", "Wide World Web", "Web World Wide"], ans: 0 },
+        { q: "What does 'CPU' stand for?", opts: ["Central Process Unit", "Central Processing Unit", "Computer Processing Unit", "Central Processor Unit"], ans: 1 },
+        { q: "Which company created the iPhone?", opts: ["Samsung", "Google", "Apple", "Microsoft"], ans: 2 },
+        { q: "What programming language is known as the language of the web?", opts: ["Python", "Java", "JavaScript", "C++"], ans: 2 },
+        { q: "What does 'USB' stand for?", opts: ["Universal Serial Bus", "Universal System Bus", "United Serial Bus", "Universal Signal Base"], ans: 0 },
+        { q: "What is the most popular search engine?", opts: ["Bing", "Yahoo", "Google", "DuckDuckGo"], ans: 2 },
+        { q: "What does 'HTML' stand for?", opts: ["Hyper Transfer Markup Language", "Hyper Text Markup Language", "High Text Markup Language", "Hyper Text Making Language"], ans: 1 },
+        { q: "What is a byte made of?", opts: ["4 bits", "6 bits", "8 bits", "16 bits"], ans: 2 },
+        { q: "Which company owns Android?", opts: ["Apple", "Microsoft", "Samsung", "Google"], ans: 3 },
+        { q: "What does 'AI' stand for?", opts: ["Automated Intelligence", "Artificial Intelligence", "Advanced Intelligence", "Applied Intelligence"], ans: 1 },
+      ],
+      medium: [
+        { q: "What does 'RAM' stand for?", opts: ["Random Access Memory", "Read Access Memory", "Rapid Access Memory", "Random Assigned Memory"], ans: 0 },
+        { q: "Which programming language was created by Guido van Rossum?", opts: ["Ruby", "Perl", "Python", "Java"], ans: 2 },
+        { q: "What does 'CSS' stand for?", opts: ["Computer Style Sheets", "Cascading Style Sheets", "Creative Style Sheets", "Coded Style Sheets"], ans: 1 },
+        { q: "Which company developed the Java programming language?", opts: ["Microsoft", "IBM", "Sun Microsystems", "Oracle"], ans: 2 },
+        { q: "What is the default port for HTTPS?", opts: ["80", "443", "8080", "22"], ans: 1 },
+        { q: "What does 'SQL' stand for?", opts: ["Structured Query Language", "Standard Query Language", "Simple Query Language", "System Query Language"], ans: 0 },
+        { q: "In which year was the first iPhone released?", opts: ["2005", "2006", "2007", "2008"], ans: 2 },
+        { q: "What does 'API' stand for?", opts: ["Application Process Interface", "Application Programming Interface", "Applied Program Interface", "Automated Programming Interface"], ans: 1 },
+        { q: "Which data structure uses LIFO order?", opts: ["Queue", "Linked List", "Stack", "Tree"], ans: 2 },
+        { q: "What is the binary representation of the number 10?", opts: ["1000", "1001", "1010", "1100"], ans: 2 },
+      ],
+      hard: [
+        { q: "What does 'SOLID' stand for in software engineering?", opts: ["A design pattern", "5 object-oriented design principles", "A type of database", "A framework"], ans: 1 },
+        { q: "What is the time complexity of binary search?", opts: ["O(n)", "O(n²)", "O(log n)", "O(n log n)"], ans: 2 },
+        { q: "What is a race condition in programming?", opts: ["When code runs too fast", "When two threads access shared data concurrently causing unexpected results", "A performance benchmark", "When memory overflows"], ans: 1 },
+        { q: "What does 'HTTPS' use to encrypt data?", opts: ["RSA only", "MD5", "TLS/SSL", "AES only"], ans: 2 },
+        { q: "What is the CAP theorem in distributed systems?", opts: ["You can achieve consistency, availability, and partition tolerance simultaneously", "You can only guarantee two of: consistency, availability, partition tolerance", "A network routing algorithm", "A database indexing strategy"], ans: 1 },
+        { q: "What is a Turing-complete language?", opts: ["A language that can compile to machine code", "A language that can simulate any Turing machine", "A language with no bugs", "A language approved by Alan Turing"], ans: 1 },
+        { q: "What does 'DNS' stand for?", opts: ["Dynamic Network System", "Domain Name System", "Distributed Network Service", "Domain Node Server"], ans: 1 },
+        { q: "What is the purpose of a mutex in concurrent programming?", opts: ["To increase speed", "To prevent multiple threads from accessing a resource simultaneously", "To allocate memory", "To handle errors"], ans: 1 },
+        { q: "What is memoization?", opts: ["Storing function results to avoid redundant computation", "A memory management technique", "A type of caching hardware", "A form of compression"], ans: 0 },
+        { q: "What does 'ORM' stand for?", opts: ["Object Relational Mapping", "Object Resource Manager", "Online Reference Model", "Output Rendering Module"], ans: 0 },
+      ]
+    }
+  };
+
+  // ── State ──
+  let selectedCategory = 'general';
+  let selectedDifficulty = 'easy';
+  let questions = [];
+  let currentIndex = 0;
+  let score = 0;
+  let timer = null;
+  let timeLeft = 20;
+  let timePerQuestion = [];
+  let questionStartTime = 0;
+  let answered = false;
+  let results = [];
+
+  const TOTAL = 10;
+  const TIME_LIMIT = 20;
+
+  // ── DOM ──
+  const startScreen  = document.getElementById('startScreen');
+  const quizScreen   = document.getElementById('quizScreen');
+  const resultScreen = document.getElementById('resultScreen');
+
+  // ── Category Selection ──
+  document.getElementById('categoryGrid').addEventListener('click', e => {
+    const btn = e.target.closest('.category-btn');
+    if (!btn) return;
+    document.querySelectorAll('.category-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedCategory = btn.dataset.cat;
+  });
+
+  // ── Difficulty Selection ──
+  document.getElementById('diffRow').addEventListener('click', e => {
+    const btn = e.target.closest('.diff-btn');
+    if (!btn) return;
+    document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedDifficulty = btn.dataset.diff;
+  });
+
+  // ── Start Quiz ──
+  document.getElementById('btnStart').addEventListener('click', startQuiz);
+
+  function startQuiz() {
+    const pool = questionBank[selectedCategory][selectedDifficulty];
+    questions = [...pool].sort(() => Math.random() - 0.5).slice(0, TOTAL);
+    currentIndex = 0;
+    score = 0;
+    results = [];
+    timePerQuestion = [];
+
+    showScreen('quizScreen');
+    buildDots();
+    loadQuestion();
+  }
+
+  // ── Build Progress Dots ──
+  function buildDots() {
+    const container = document.getElementById('progressDots');
+    container.innerHTML = '';
+    for (let i = 0; i < TOTAL; i++) {
+      const dot = document.createElement('div');
+      dot.classList.add('dot');
+      if (i === 0) dot.classList.add('current');
+      dot.id = `dot-${i}`;
+      container.appendChild(dot);
+    }
+  }
+
+  function updateDot(index, status) {
+    const dot = document.getElementById(`dot-${index}`);
+    if (!dot) return;
+    dot.classList.remove('current', 'done-correct', 'done-wrong');
+    dot.classList.add(status);
+  }
+
+  // ── Load Question ──
+  function loadQuestion() {
+    answered = false;
+    timeLeft = TIME_LIMIT;
+    questionStartTime = Date.now();
+
+    const q = questions[currentIndex];
+    const letters = ['A', 'B', 'C', 'D'];
+
+    document.getElementById('qCounter').textContent = `Question ${currentIndex + 1} of ${TOTAL}`;
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+    document.getElementById('questionLabel').textContent = `${capitalize(selectedCategory)} · ${capitalize(selectedDifficulty)}`;
+    document.getElementById('questionText').textContent = q.q;
+
+    const feedback = document.getElementById('feedbackBar');
+    feedback.className = 'feedback-bar';
+    feedback.textContent = '';
+
+    const btnNext = document.getElementById('btnNext');
+    btnNext.className = 'btn-next';
+    btnNext.textContent = currentIndex === TOTAL - 1 ? 'See Results 🏁' : 'Next Question →';
+
+    // Options
+    const grid = document.getElementById('optionsGrid');
+    grid.innerHTML = '';
+    q.opts.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.classList.add('option-btn');
+      btn.innerHTML = `<span class="opt-letter">${letters[i]}</span>${opt}`;
+      btn.addEventListener('click', () => selectAnswer(i));
+      grid.appendChild(btn);
+    });
+
+    // Update current dot
+    if (currentIndex > 0) updateDot(currentIndex - 1, results[currentIndex - 1].correct ? 'done-correct' : 'done-wrong');
+    updateDot(currentIndex, 'current');
+
+    startTimer();
+  }
+
+  // ── Timer ──
+  function startTimer() {
+    clearInterval(timer);
+    updateTimerUI();
+    timer = setInterval(() => {
+      timeLeft--;
+      updateTimerUI();
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        autoFail();
+      }
+    }, 1000);
+  }
+
+  function updateTimerUI() {
+    const pct = (timeLeft / TIME_LIMIT) * 100;
+    const bar = document.getElementById('timerBar');
+    bar.style.width = pct + '%';
+    bar.style.background = timeLeft <= 5 ? 'var(--red)' : timeLeft <= 10 ? 'var(--yellow)' : 'var(--primary)';
+    document.getElementById('timerText').textContent = `${timeLeft}s`;
+  }
+
+  function autoFail() {
+    if (answered) return;
+    answered = true;
+    const q = questions[currentIndex];
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+    timePerQuestion.push(timeTaken);
+
+    results.push({ q: q.q, correct: false, chosen: -1, correctAns: q.opts[q.ans] });
+
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.disabled = true);
+    btns[q.ans].classList.add('correct');
+
+    showFeedback(false, "⏰ Time's up! No answer selected.");
+    document.getElementById('btnNext').classList.add('show');
+  }
+
+  // ── Select Answer ──
+  function selectAnswer(index) {
+    if (answered) return;
+    answered = true;
+    clearInterval(timer);
+
+    const timeTaken = Math.round((Date.now() - questionStartTime) / 1000);
+    timePerQuestion.push(timeTaken);
+
+    const q = questions[currentIndex];
+    const btns = document.querySelectorAll('.option-btn');
+    btns.forEach(b => b.disabled = true);
+
+    const isCorrect = index === q.ans;
+
+    if (isCorrect) {
+      score++;
+      btns[index].classList.add('correct');
+      showFeedback(true, '✅ Correct!');
+    } else {
+      btns[index].classList.add('wrong');
+      btns[q.ans].classList.add('correct');
+      showFeedback(false, `❌ Wrong! Correct answer: ${q.opts[q.ans]}`);
+    }
+
+    results.push({ q: q.q, correct: isCorrect, chosen: index, correctAns: q.opts[q.ans], chosenAns: q.opts[index] });
+    document.getElementById('scoreBadge').textContent = `Score: ${score}`;
+    document.getElementById('btnNext').classList.add('show');
+  }
+
+  function showFeedback(correct, msg) {
+    const bar = document.getElementById('feedbackBar');
+    bar.textContent = msg;
+    bar.className = `feedback-bar show ${correct ? 'correct-fb' : 'wrong-fb'}`;
+  }
+
+  // ── Next Question ──
+  document.getElementById('btnNext').addEventListener('click', () => {
+    currentIndex++;
+    if (currentIndex >= TOTAL) {
+      showResults();
+    } else {
+      loadQuestion();
+    }
+  });
+
+  // ── Results ──
+  function showResults() {
+    updateDot(TOTAL - 1, results[TOTAL - 1].correct ? 'done-correct' : 'done-wrong');
+
+    const correct = results.filter(r => r.correct).length;
+    const wrong = TOTAL - correct;
+    const pct = Math.round((correct / TOTAL) * 100);
+    const avgTime = Math.round(timePerQuestion.reduce((a, b) => a + b, 0) / timePerQuestion.length);
+
+    let emoji = '😞', title = 'Keep Practicing!';
+    if (pct >= 90) { emoji = '🏆'; title = 'Outstanding!'; }
+    else if (pct >= 70) { emoji = '🎉'; title = 'Great Job!'; }
+    else if (pct >= 50) { emoji = '👍'; title = 'Good Effort!'; }
+    else if (pct >= 30) { emoji = '💪'; title = 'Keep Going!'; }
+
+    document.getElementById('resultEmoji').textContent = emoji;
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultSubtitle').textContent = `${capitalize(selectedCategory)} · ${capitalize(selectedDifficulty)}`;
+    document.getElementById('finalScore').textContent = `${correct}/${TOTAL}`;
+    document.getElementById('statCorrect').textContent = correct;
+    document.getElementById('statWrong').textContent = wrong;
+    document.getElementById('statTime').textContent = avgTime + 's';
+    document.getElementById('statPct').textContent = pct + '%';
+
+    // Review list
+    const reviewList = document.getElementById('reviewList');
+    reviewList.innerHTML = '';
+    results.forEach((r, i) => {
+      const div = document.createElement('div');
+      div.classList.add('review-item');
+      div.innerHTML = `
+        <div class="ri-q">Q${i + 1}: ${r.q}</div>
+        <div class="ri-a ${r.correct ? 'correct' : 'wrong'}">
+          ${r.correct ? '✅' : '❌'} ${r.correct ? r.correctAns : `You chose: ${r.chosen === -1 ? 'No answer' : r.chosenAns} · Correct: ${r.correctAns}`}
+        </div>
+      `;
+      reviewList.appendChild(div);
+    });
+
+    showScreen('resultScreen');
+  }
+
+  // ── Restart ──
+  document.getElementById('btnRestart').addEventListener('click', () => {
+    showScreen('startScreen');
+  });
+
+  // ── Helpers ──
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  function capitalize(str) {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
+</script>
+</body>
+</html>
